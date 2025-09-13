@@ -13,33 +13,33 @@ class AuthService:
     """
     Service for handling JWT authentication with Supabase
     
-    Bu servis JWT token'ları Supabase API ile doğrular (Production-ready):
-    1. JWT secret'a bağımlı değil - secret değişse bile çalışır
-    2. Supabase API'ye token gönderir ve doğrulama yapar
-    3. Güvenilir ve sürdürülebilir
+    This service validates JWT tokens using Supabase API (Production-ready):
+    - Independent of JWT secret changes
+    - Validates tokens directly with Supabase API
+    - Reliable and maintainable authentication
     """
     
     @staticmethod
     async def verify_supabase_token(token: str) -> dict:
         """
-        JWT token'ı Supabase API ile doğrular (Production-ready)
+        Verifies JWT token with Supabase API
         
-        Bu yöntem JWT secret'a bağımlı değildir:
-        - Supabase API'ye token'ı gönderir
-        - Supabase token'ı doğrular ve kullanıcı bilgilerini döner
-        - JWT secret değişse bile çalışır
+        This method is independent of JWT secrets:
+        - Sends token to Supabase API for verification
+        - Returns user information from Supabase
+        - Works even if JWT secret changes
         
         Args:
-            token: Supabase'den gelen JWT token string
+            token: JWT token string from Supabase
             
         Returns:
-            dict: Kullanıcı bilgileri (Supabase API'den)
+            dict: User information from Supabase API
             
         Raises:
-            HTTPException: Token geçersiz, süresi dolmuş veya bozuksa
+            HTTPException: If token is invalid, expired or malformed
         """
         try:
-            # Supabase API ile token doğrulama
+            # Verify token with Supabase API
             headers = {
                 "Authorization": f"Bearer {token}",
                 "apikey": settings.supabase_key,
@@ -47,7 +47,7 @@ class AuthService:
             }
             
             async with httpx.AsyncClient() as client:
-                # Supabase user endpoint'ine istek at
+                # Request to Supabase user endpoint
                 response = await client.get(
                     f"{settings.supabase_url}/auth/v1/user",
                     headers=headers
@@ -83,20 +83,20 @@ class AuthService:
     @staticmethod
     async def get_user_id_from_token(token: str) -> UUID:
         """
-        JWT token'dan kullanıcı ID'sini çıkarır
+        Extracts user ID from JWT token
         
         Args:
             token: JWT token string
             
         Returns:
-            UUID: Kullanıcının benzersiz ID'si
+            UUID: User's unique identifier
             
         Raises:
-            HTTPException: Token geçersizse veya user ID bulunamazsa
+            HTTPException: If token is invalid or user ID not found
         """
         user_data = await AuthService.verify_supabase_token(token)
         
-        # Supabase API response'unda user ID "id" field'ında bulunur
+        # User ID is found in the "id" field of Supabase API response
         user_id_str = user_data.get("id")
         
         if not user_id_str:

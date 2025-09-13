@@ -20,15 +20,13 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up Notes App Backend...")
     
-
-
     # Create database tables
     try:
-        await create_tables()  # Uncommented to enable database
+        await create_tables()
         logger.info("Database tables created successfully")
     except Exception as e:
         logger.error(f"Failed to create database tables: {e}")
-        # Don't raise error, continue without DB for testing
+        # Continue without raising error for graceful degradation
     
     yield
     
@@ -41,22 +39,22 @@ app = FastAPI(
     title=settings.project_name,
     description="A professional note-taking application backend built with FastAPI and Supabase",
     version="1.0.0",
-    docs_url="/docs",  # Always enabled for testing
-    redoc_url="/redoc",  # Always enabled for testing
+    docs_url="/docs",
+    redoc_url="/redoc",
     lifespan=lifespan
 )
 
 # Add CORS middleware to allow frontend connections
-# Production'da güvenlik için belirli origin'leri kullanın
+# Use specific origins in production for security
 allowed_origins = [
     "http://localhost:3000",  # Flutter web development
     "http://127.0.0.1:3000",
     "https://your-flutter-app.vercel.app",  # Production Flutter web
     "https://your-flutter-app.netlify.app",
-    # Mobil uygulamalar için origin gerekmez, sadece web için
+    # Mobile apps don't need origins, only web apps
 ]
 
-# Development modunda tüm origin'lere izin ver, production'da kısıtla
+# Allow all origins in development, restrict in production
 if settings.debug:
     allowed_origins = ["*"]
 

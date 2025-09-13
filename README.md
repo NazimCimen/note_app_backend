@@ -1,45 +1,85 @@
 # Notes App Backend
 
-Professional note-taking application backend built with FastAPI and Supabase for technical interview showcase.
+A professional note-taking application backend built with **FastAPI** and **Supabase**. This API provides secure endpoints for creating, reading, updating, and deleting notes with user authentication.
+
 
 ## 🚀 Features
 
-- **JWT Authentication**: Secure authentication with Supabase JWT tokens
-- **CRUD Operations**: Full Create, Read, Update, Delete operations for notes
-- **Search & Filter**: Search notes by title or content (case-insensitive)
-- **User Authorization**: Users can only access their own notes
-- **Pagination**: Efficient pagination for large note collections
-- **Modern Architecture**: Clean, maintainable code structure
-- **API Documentation**: Auto-generated interactive API docs
+- **JWT Authentication** with Supabase
+- **CRUD Operations** for notes
+- **Search Functionality** in notes
+- **Pagination Support** for note lists
+- **User Isolation** - users can only access their own notes
+- **Modern Async/Await** Python architecture
+- **Type Safety** with Pydantic schemas
+- **Auto-generated API Documentation** with FastAPI
 
 ## 📋 API Endpoints
 
 ### Authentication
-All endpoints require JWT token in Authorization header: `Authorization: Bearer <token>`
+All endpoints require JWT authentication via Bearer token from Supabase.
 
 ### Notes Endpoints
-- **GET /api/v1/notes/** - Get all user notes (with search & pagination)
-- **POST /api/v1/notes/** - Create a new note
-- **GET /api/v1/notes/{id}** - Get specific note by ID
-- **PUT /api/v1/notes/{id}** - Update specific note
-- **DELETE /api/v1/notes/{id}** - Delete specific note
 
-### System Endpoints
-- **GET /** - API information
-- **GET /health** - Health check
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/notes/` | List user's notes with search & pagination |
+| `POST` | `/api/v1/notes/` | Create a new note |
+| `GET` | `/api/v1/notes/{id}` | Get a specific note by ID |
+| `PUT` | `/api/v1/notes/{id}` | Update a note by ID |
+| `DELETE` | `/api/v1/notes/{id}` | Delete a note by ID |
 
-## 🛠️ Tech Stack
+### Additional Endpoints
 
-- **FastAPI**: Modern, fast web framework for building APIs
-- **Supabase**: Backend-as-a-Service with PostgreSQL
-- **SQLAlchemy**: SQL toolkit and ORM
-- **Pydantic**: Data validation using Python type hints
-- **JWT**: JSON Web Tokens for authentication
-- **AsyncPG**: Async PostgreSQL adapter
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/` | API information and status |
+| `GET` | `/health` | Health check endpoint |
+| `GET` | `/docs` | Interactive API documentation (Swagger UI) |
+| `GET` | `/redoc` | Alternative API documentation (ReDoc) |
 
-## 📦 Installation
+## 🛠️ Technology Stack
 
-### 1. Clone Repository
+- **FastAPI** - Modern, fast web framework for building APIs
+- **SQLAlchemy** - SQL toolkit and ORM with async support
+- **AsyncPG** - Async PostgreSQL adapter
+- **Supabase** - Backend-as-a-Service for authentication and database
+- **Pydantic** - Data validation using Python type hints
+- **JWT** - JSON Web Tokens for secure authentication
+- **Uvicorn** - ASGI server implementation
+
+## 📁 Project Structure
+
+```
+note_app_backend/
+├── app/
+│   ├── middleware/
+│   │   └── auth.py          # Authentication middleware
+│   ├── models/
+│   │   ├── note.py          # Note database model
+│   │   └── user.py          # User database model
+│   ├── routers/
+│   │   └── notes.py         # Note API endpoints
+│   ├── schemas/
+│   │   └── note.py          # Pydantic schemas for validation
+│   ├── services/
+│   │   ├── auth.py          # Authentication service
+│   │   └── note.py          # Note business logic
+│   ├── config.py            # Application configuration
+│   └── database.py          # Database connection and setup
+├── main.py                  # FastAPI application entry point
+├── requirements.txt         # Python dependencies
+└── README.md               # This file
+```
+
+## ⚙️ Setup and Installation
+
+### Prerequisites
+- Python 3.8+
+- PostgreSQL database (or Supabase)
+- Supabase account and project
+
+### 1. Clone the Repository
 ```bash
 git clone <repository-url>
 cd note_app_backend
@@ -48,176 +88,170 @@ cd note_app_backend
 ### 2. Create Virtual Environment
 ```bash
 python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
-### 3. Activate Virtual Environment
-**Windows PowerShell:**
-```bash
-.\venv\Scripts\Activate.ps1
-```
-
-**Windows Command Prompt:**
-```bash
-venv\Scripts\activate.bat
-```
-
-**Linux/Mac:**
-```bash
-source venv/bin/activate
-```
-
-### 4. Install Dependencies
+### 3. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 5. Environment Configuration
+### 4. Environment Configuration
 Create a `.env` file in the root directory:
 
 ```env
 # Supabase Configuration
 SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your-anon-key-here
-SUPABASE_JWT_SECRET=your-jwt-secret-here
+SUPABASE_KEY=your-anon-public-key
+SUPABASE_JWT_SECRET=your-jwt-secret
 
 # Database Configuration
-DATABASE_URL=postgresql://postgres:your_password@db.your-project.supabase.co:5432/postgres
-
-# JWT Configuration
-JWT_SECRET_KEY=your-super-secret-jwt-key
-JWT_ALGORITHM=HS256
-JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
+DATABASE_URL=postgresql://username:password@localhost:5432/notes_db
 
 # API Configuration
 API_V1_STR=/api/v1
 PROJECT_NAME=Notes App Backend
+DEBUG=true
 ```
 
-## 🚀 Running the Application
-
-### Development Mode (Recommended)
-```bash
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### Direct Python Execution
+### 5. Run the Application
 ```bash
 python main.py
 ```
 
+The API will be available at `http://localhost:8000`
+
 ## 📖 API Documentation
 
-Once the server is running, access interactive API documentation:
+Once the server is running, you can access:
 
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
 
-## 🏗️ Project Structure
+## 🔐 Authentication
 
-```
-note_app_backend/
-├── app/
-│   ├── __init__.py
-│   ├── config.py           # Configuration settings
-│   ├── database.py         # Database connection & setup
-│   ├── models/
-│   │   ├── __init__.py
-│   │   └── note.py         # Note SQLAlchemy model
-│   ├── schemas/
-│   │   ├── __init__.py
-│   │   └── note.py         # Pydantic schemas
-│   ├── services/
-│   │   ├── __init__.py
-│   │   ├── auth.py         # JWT authentication service
-│   │   └── note.py         # Note business logic
-│   ├── middleware/
-│   │   ├── __init__.py
-│   │   └── auth.py         # Authentication middleware
-│   └── routers/
-│       ├── __init__.py
-│       └── notes.py        # Notes API routes
-├── main.py                 # FastAPI application entry point
-├── requirements.txt        # Python dependencies
-├── env.example            # Environment variables example
-└── README.md              # Project documentation
-```
+This API uses Supabase JWT authentication. To use the endpoints:
 
-## 🔐 Authentication Flow
+1. **Sign up/Login** through your Flutter app using Supabase Auth
+2. **Get JWT token** from Supabase client
+3. **Include token** in API requests:
+   ```
+   Authorization: Bearer <your-jwt-token>
+   ```
 
-1. **Flutter App**: User signs in with Supabase Auth
-2. **JWT Token**: Supabase returns JWT token
-3. **API Requests**: Flutter sends token in Authorization header
-4. **Token Verification**: Backend verifies JWT with Supabase secret
-5. **User Context**: Extracted user ID used for authorization
+### Authentication Flow
+1. User authenticates via Supabase (handled by Flutter app)
+2. Supabase returns JWT token
+3. Flutter app sends JWT token with API requests
+4. Backend validates token with Supabase API
+5. Backend extracts user ID and processes request
 
-## 🔍 Search & Filtering
+## 💾 Database Schema
 
-The `GET /api/v1/notes/` endpoint supports:
-- **search**: Query parameter for searching in title/content
-- **page**: Page number for pagination (default: 1)
-- **per_page**: Items per page (default: 10, max: 100)
-
-Example:
-```
-GET /api/v1/notes/?search=meeting&page=1&per_page=20
-```
-
-## 🛡️ Security Features
-
-- **JWT Token Verification**: All endpoints verify Supabase JWT tokens
-- **User Authorization**: Users can only access their own notes
-- **Input Validation**: All inputs validated with Pydantic schemas
-- **CORS Configuration**: Configurable CORS for frontend integration
-- **SQL Injection Protection**: SQLAlchemy ORM prevents SQL injection
-
-## 🧪 Testing the API
-
-### Using curl (after getting JWT token from Supabase):
-
-```bash
-# Get all notes
-curl -H "Authorization: Bearer <your-jwt-token>" http://localhost:8000/api/v1/notes/
-
-# Create a note
-curl -X POST -H "Authorization: Bearer <your-jwt-token>" -H "Content-Type: application/json" \
--d '{"title":"My Note","content":"Note content"}' http://localhost:8000/api/v1/notes/
-
-# Search notes
-curl -H "Authorization: Bearer <your-jwt-token>" \
-"http://localhost:8000/api/v1/notes/?search=meeting"
-```
-
-## 🚀 Production Deployment
-
-1. Set `echo=False` in database.py
-2. Configure proper CORS origins
-3. Use environment variables for all secrets
-4. Set up proper logging
-5. Configure database connection pooling
-6. Add rate limiting middleware
-
-## 📝 Database Schema
-
-### Notes Table
+### Note Table
 ```sql
-CREATE TABLE notes (
-    id SERIAL PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
+CREATE TABLE note (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title VARCHAR NOT NULL,
     content TEXT NOT NULL,
-    user_id VARCHAR(255) NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    is_favorite BOOLEAN DEFAULT FALSE,
+    user_id UUID NOT NULL REFERENCES auth.users(id),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
 );
-
-CREATE INDEX idx_notes_user_id ON notes(user_id);
-CREATE INDEX idx_notes_title ON notes(title);
 ```
 
-## 🤝 Contributing
+## 📝 Usage Examples
 
-This is a technical interview project. Code is structured for:
-- **Readability**: Clean, well-documented code
-- **Maintainability**: Modular architecture
-- **Scalability**: Async operations, proper DB patterns
-- **Security**: JWT verification, user authorization
-- **Best Practices**: Type hints, error handling, logging
+### Create a Note
+```bash
+curl -X POST "http://localhost:8000/api/v1/notes/" \
+  -H "Authorization: Bearer <your-jwt-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "My First Note",
+    "content": "This is the content of my note",
+    "is_favorite": false
+  }'
+```
+
+### Get All Notes
+```bash
+curl -X GET "http://localhost:8000/api/v1/notes/?page=1&per_page=10" \
+  -H "Authorization: Bearer <your-jwt-token>"
+```
+
+### Search Notes
+```bash
+curl -X GET "http://localhost:8000/api/v1/notes/?search=important&page=1&per_page=10" \
+  -H "Authorization: Bearer <your-jwt-token>"
+```
+
+### Update a Note
+```bash
+curl -X PUT "http://localhost:8000/api/v1/notes/{note-id}" \
+  -H "Authorization: Bearer <your-jwt-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "title": "Updated Title",
+    "content": "Updated content"
+  }'
+```
+
+### Delete a Note
+```bash
+curl -X DELETE "http://localhost:8000/api/v1/notes/{note-id}" \
+  -H "Authorization: Bearer <your-jwt-token>"
+```
+
+## 🧪 Testing
+
+The API includes comprehensive error handling and validation:
+
+- **401 Unauthorized**: Invalid or missing JWT token
+- **404 Not Found**: Note doesn't exist or doesn't belong to user
+- **422 Unprocessable Entity**: Invalid request data
+- **500 Internal Server Error**: Server-side errors
+
+## 🚀 Deployment
+
+### Environment Variables for Production
+```env
+DEBUG=false
+DATABASE_URL=postgresql://prod-user:password@prod-host:5432/prod_db
+# Add production Supabase credentials
+```
+
+### Deployment Platforms
+- **Railway**: Connect GitHub repo and deploy
+- **Heroku**: Use Procfile with `web: python main.py`
+- **DigitalOcean App Platform**: Use App Spec configuration
+- **AWS/GCP/Azure**: Deploy as containerized application
+
+## 🔧 Development
+
+### Code Structure
+- **Models**: SQLAlchemy ORM models for database tables
+- **Schemas**: Pydantic models for request/response validation
+- **Services**: Business logic layer
+- **Routers**: FastAPI route handlers
+- **Middleware**: Authentication and other cross-cutting concerns
+
+### Key Features
+- **Async/Await**: Full async support for better performance
+- **Type Hints**: Complete type annotations for better IDE support
+- **Error Handling**: Comprehensive exception handling
+- **Logging**: Structured logging for debugging and monitoring
+- **Security**: JWT validation with Supabase API
+
+## 📄 License
+
+This project is part of a client deliverable and follows the agreed-upon terms.
+
+## 🤝 Support
+
+For technical support or questions about this API, please refer to the API documentation at `/docs` or contact the development team.
+
+---
+
+**Built with ❤️ using FastAPI and Supabase**

@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     # Supabase Configuration
     supabase_url: str
     supabase_key: str
-    supabase_jwt_secret: str  # Sadece bu gerekli!
+    supabase_jwt_secret: str
     
     # Database Configuration
     database_url: str
