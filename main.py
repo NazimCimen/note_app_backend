@@ -47,12 +47,25 @@ app = FastAPI(
 )
 
 # Add CORS middleware to allow frontend connections
+# Production'da güvenlik için belirli origin'leri kullanın
+allowed_origins = [
+    "http://localhost:3000",  # Flutter web development
+    "http://127.0.0.1:3000",
+    "https://your-flutter-app.vercel.app",  # Production Flutter web
+    "https://your-flutter-app.netlify.app",
+    # Mobil uygulamalar için origin gerekmez, sadece web için
+]
+
+# Development modunda tüm origin'lere izin ver, production'da kısıtla
+if settings.debug:
+    allowed_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # Include routers

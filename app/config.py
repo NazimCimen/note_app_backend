@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     project_name: str = "Notes App Backend"
     
     # Environment
-    debug: bool = True
+    debug: bool = True  # Production'da False yapın
     
     class Config:
         env_file = ".env"

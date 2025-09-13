@@ -1,9 +1,10 @@
-import httpx
+import jwt
 from fastapi import HTTPException, status
 from app.config import settings
 from typing import Optional
 import logging
 from uuid import UUID
+import base64
 
 logger = logging.getLogger(__name__)
 
@@ -11,70 +12,109 @@ logger = logging.getLogger(__name__)
 class AuthService:
     """
     Service for handling JWT authentication with Supabase
+    
+    Bu servis JWT token'ları lokal olarak doğrular, bu sayede:
+    1. Daha hızlı çalışır (Supabase'e istek atmaz)
+    2. Daha güvenilir (network bağımlılığı yok)
+    3. Production'da daha performanslı
     """
     
     @staticmethod
     async def verify_supabase_token(token: str) -> dict:
         """
-        Verify token using Supabase API
+        JWT token'ı lokal olarak doğrular
         
         Args:
-            token: JWT token string from Supabase
+            token: Supabase'den gelen JWT token string
             
         Returns:
-            dict: User information from Supabase
+            dict: Token payload'ı (kullanıcı bilgileri içerir)
             
         Raises:
-            HTTPException: If token is invalid or expired
+            HTTPException: Token geçersiz, süresi dolmuş veya bozuksa
         """
         try:
-            # Use Supabase API to verify token
-            headers = {
-                "Authorization": f"Bearer {token}",
-                "apikey": settings.supabase_key
-            }
+            # JWT token'ı Supabase JWT secret ile decode et
+            payload = jwt.decode(
+                token,
+                settings.supabase_jwt_secret,  # .env dosyasındaki secret
+                algorithms=["HS256"],
+                audience="authenticated",  # Supabase standart audience
+                options={
+                    "verify_signature": True,
+                    "verify_exp": True,  # Expiry time kontrol et
+                    "verify_aud": True   # Audience kontrol et
+                }
+            )
             
-            async with httpx.AsyncClient() as client:
-                response = await client.get(
-                    f"{settings.supabase_url}/auth/v1/user",
-                    headers=headers
-                )
-                
-                if response.status_code == 200:
-                    user_data = response.json()
-                    return user_data
-                else:
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Invalid or expired token",
-                        headers={"WWW-Authenticate": "Bearer"},
-                    )
-                    
-        except httpx.RequestError as e:
-            logger.error(f"Supabase API request failed: {str(e)}")
+            # Token payload'ını log'la (debug için)
+            logger.info(f"JWT token successfully verified for user: {payload.get('sub', 'unknown')}")
+            return payload
+            
+        except jwt.ExpiredSignatureError:
+            logger.warning("JWT token has expired")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication service unavailable",
+                detail="Token has expired. Please login again.",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        except jwt.InvalidAudienceError:
+            logger.warning("JWT token has invalid audience")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token audience",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        except jwt.InvalidTokenError as e:
+            logger.warning(f"Invalid JWT token: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token format or signature",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error during JWT verification: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token verification failed",
                 headers={"WWW-Authenticate": "Bearer"},
             )
     
     @staticmethod
     async def get_user_id_from_token(token: str) -> UUID:
         """
-        Extract user ID from Supabase token
+        JWT token'dan kullanıcı ID'sini çıkarır
         
         Args:
-            token: JWT token string from Supabase
+            token: JWT token string
             
         Returns:
-            UUID: User ID from Supabase
+            UUID: Kullanıcının benzersiz ID'si
+            
+        Raises:
+            HTTPException: Token geçersizse veya user ID bulunamazsa
         """
-        user_data = await AuthService.verify_supabase_token(token)
-        user_id_str = user_data.get("id")
-        if user_id_str:
-            return UUID(user_id_str)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token: user ID not found",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        payload = await AuthService.verify_supabase_token(token)
+        
+        # JWT standartında user ID "sub" (subject) field'ında bulunur
+        user_id_str = payload.get("sub")
+        
+        if not user_id_str:
+            logger.error("JWT token payload missing 'sub' field")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token: user ID not found",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        try:
+            user_uuid = UUID(user_id_str)
+            logger.info(f"Successfully extracted user ID: {user_uuid}")
+            return user_uuid
+        except ValueError:
+            logger.error(f"Invalid UUID format in token: {user_id_str}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid user ID format in token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
