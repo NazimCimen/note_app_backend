@@ -41,8 +41,8 @@ app = FastAPI(
     title=settings.project_name,
     description="A professional note-taking application backend built with FastAPI and Supabase",
     version="1.0.0",
-    docs_url="/docs" if settings.debug else None,
-    redoc_url="/redoc" if settings.debug else None,
+    docs_url="/docs",  # Always enabled for testing
+    redoc_url="/redoc",  # Always enabled for testing
     lifespan=lifespan
 )
 
