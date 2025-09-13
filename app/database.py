@@ -2,7 +2,6 @@ from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import NullPool
-from sqlalchemy.engine.events import PoolEvents
 from sqlalchemy import event
 from app.config import settings
 
@@ -43,11 +42,7 @@ engine = create_async_engine(
     }
 )
 
-# Add event listener to ensure prepared statements are disabled
-@event.listens_for(engine.sync_engine, "connect")
-def set_sqlite_pragma(dbapi_connection, connection_record):
-    """Ensure prepared statements are disabled for PgBouncer compatibility"""
-    pass
+# Event listener removed - not needed with NullPool and disabled prepared statements
 
 # Create async session maker
 AsyncSessionLocal = sessionmaker(
