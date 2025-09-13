@@ -125,7 +125,7 @@ SUPABASE_KEY=your-anon-public-key
 SUPABASE_JWT_SECRET=your-jwt-secret
 
 # Database Configuration (Supabase with PgBouncer)
-DATABASE_URL=postgresql://postgres.vrobyncvsszbtsipnyfu:your-password@aws-1-eu-central-1.pooler.supabase.com:6543/postgres?pgbouncer=true
+DATABASE_URL=postgresql://postgres.vrobyncvsszbtsipnyfu:your-password@aws-1-eu-central-1.pooler.supabase.com:6543/postgres
 
 # API Configuration
 API_V1_STR=/api/v1
@@ -271,7 +271,7 @@ Railway is the easiest way to deploy this FastAPI application:
    SUPABASE_URL=https://your-project.supabase.co
    SUPABASE_KEY=your-anon-public-key
    SUPABASE_JWT_SECRET=your-jwt-secret
-   DATABASE_URL=postgresql://postgres.xxx:password@aws-1-eu-central-1.pooler.supabase.com:6543/postgres?pgbouncer=true
+   DATABASE_URL=postgresql://postgres.xxx:password@aws-1-eu-central-1.pooler.supabase.com:6543/postgres
    DEBUG=false
    ```
 3. **Deploy**: Railway will automatically detect and deploy your FastAPI app
@@ -285,6 +285,7 @@ Railway is the easiest way to deploy this FastAPI application:
 ### Important Notes for Production
 - Always use `DEBUG=false` in production
 - Use the **pooled connection** (port 6543) for Supabase
+- **Do NOT include** `?pgbouncer=true` in DATABASE_URL - this is handled automatically
 - **Tables must be created manually** in Supabase dashboard (see Database Schema section)
 - Enable Row Level Security (RLS) policies in Supabase
 - The application does NOT auto-create tables - this is by design for production safety

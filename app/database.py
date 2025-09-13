@@ -10,7 +10,8 @@ Base = declarative_base()
 # Create async database engine for Supabase with PgBouncer
 def get_database_url():
     """
-    Convert DATABASE_URL to asyncpg format and ensure pgbouncer parameter is present
+    Convert DATABASE_URL to asyncpg format and remove pgbouncer parameter
+    (pgbouncer compatibility is handled via connect_args)
     """
     url = settings.database_url
     
@@ -18,10 +19,11 @@ def get_database_url():
     if url.startswith("postgresql://"):
         url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
     
-    # Ensure pgbouncer=true parameter is present
-    if "pgbouncer=true" not in url:
-        separator = "&" if "?" in url else "?"
-        url += f"{separator}pgbouncer=true"
+    # Remove pgbouncer parameter if present (AsyncPG doesn't recognize it)
+    if "?pgbouncer=true" in url:
+        url = url.replace("?pgbouncer=true", "")
+    if "&pgbouncer=true" in url:
+        url = url.replace("&pgbouncer=true", "")
     
     return url
 
@@ -29,11 +31,16 @@ engine = create_async_engine(
     get_database_url(),
     echo=False,  # Disabled in production
     future=True,
-    # Minimal settings - let pgbouncer handle connection management
+    # PgBouncer compatibility - disable prepared statements
+    connect_args={
+        "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0,
+    },
+    # Minimal connection pooling - let PgBouncer handle it
     pool_size=1,
     max_overflow=0,
-    pool_pre_ping=False,  # Let pgbouncer handle this
-    pool_recycle=-1,      # No connection recycling
+    pool_pre_ping=False,
+    pool_recycle=-1,
 )
 
 # Create async session maker
