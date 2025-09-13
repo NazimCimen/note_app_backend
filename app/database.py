@@ -10,11 +10,16 @@ Base = declarative_base()
 # Create async database engine
 engine = create_async_engine(
     settings.database_url.replace("postgresql://", "postgresql+asyncpg://"),
-    echo=True,  # Set to False in production
+    echo=settings.debug,  # Only show SQL logs in development
     future=True,
-    # Fix for pgbouncer transaction mode - disable prepared statements
+    pool_pre_ping=True,  # Verify connections before use
+    # Fix for pgbouncer transaction mode - disable prepared statements completely
     connect_args={
         "statement_cache_size": 0,
+        "prepared_statement_cache_size": 0,
+        "server_settings": {
+            "application_name": "notes_app_backend",
+        }
     }
 )
 
