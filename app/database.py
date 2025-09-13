@@ -11,7 +11,11 @@ Base = declarative_base()
 engine = create_async_engine(
     settings.database_url.replace("postgresql://", "postgresql+asyncpg://"),
     echo=True,  # Set to False in production
-    future=True
+    future=True,
+    # Fix for pgbouncer transaction mode - disable prepared statements
+    connect_args={
+        "statement_cache_size": 0,
+    }
 )
 
 # Create async session maker
