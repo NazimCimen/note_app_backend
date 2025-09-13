@@ -32,7 +32,7 @@ class AuthService:
             payload = jwt.decode(
                 token,
                 settings.supabase_jwt_secret,
-                algorithms=[settings.jwt_algorithm],
+                algorithms=["HS256"],  # Supabase uses HS256 for JWT secret
                 audience="authenticated"
             )
             
