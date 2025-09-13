@@ -4,6 +4,9 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from app.config import settings
 
+# Create shared Base for all models
+Base = declarative_base()
+
 # Create async database engine
 engine = create_async_engine(
     settings.database_url.replace("postgresql://", "postgresql+asyncpg://"),
@@ -34,10 +37,9 @@ async def create_tables():
     """
     Create all tables in the database
     """
-    # Import models to ensure they are registered
-    from app.models.note import Base as NoteBase
-    from app.models.user import Base as UserBase
+    # Import models to ensure they are registered with Base
+    from app.models.note import Note
+    from app.models.user import User
     
     async with engine.begin() as conn:
-        await conn.run_sync(NoteBase.metadata.create_all)
-        await conn.run_sync(UserBase.metadata.create_all)
+        await conn.run_sync(Base.metadata.create_all)

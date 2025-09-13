@@ -1,11 +1,11 @@
 from sqlalchemy import Column, String, DateTime
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 import uuid
 
-Base = declarative_base()
+# Import shared Base from database module
+from app.database import Base
 
 
 class User(Base):
