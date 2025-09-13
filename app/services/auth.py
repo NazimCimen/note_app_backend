@@ -46,6 +46,10 @@ class AuthService:
                 "Content-Type": "application/json"
             }
             
+            # Debug logging
+            logger.info(f"Verifying token with Supabase URL: {settings.supabase_url}")
+            logger.info(f"Using API key (first 20 chars): {settings.supabase_key[:20]}...")
+            
             async with httpx.AsyncClient() as client:
                 # Request to Supabase user endpoint
                 response = await client.get(
@@ -58,10 +62,12 @@ class AuthService:
                     logger.info(f"JWT token successfully verified via Supabase API for user: {user_data.get('id', 'unknown')}")
                     return user_data
                 else:
-                    logger.warning(f"Supabase API returned {response.status_code}: {response.text}")
+                    logger.error(f"Supabase API returned {response.status_code}: {response.text}")
+                    logger.error(f"Request URL: {settings.supabase_url}/auth/v1/user")
+                    logger.error(f"Request headers: {headers}")
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Token verification failed with Supabase",
+                        detail=f"Token verification failed with Supabase: {response.status_code}",
                         headers={"WWW-Authenticate": "Bearer"},
                     )
             

@@ -31,16 +31,18 @@ engine = create_async_engine(
     get_database_url(),
     echo=False,  # Disabled in production
     future=True,
-    # PgBouncer compatibility - disable prepared statements
+    # Serverless-optimized settings (Vercel compatible)
     connect_args={
-        "statement_cache_size": 0,
+        "statement_cache_size": 0,  # No prepared statements for PgBouncer
         "prepared_statement_cache_size": 0,
+        "command_timeout": 60,  # Timeout for long queries
     },
-    # Minimal connection pooling - let PgBouncer handle it
-    pool_size=1,
-    max_overflow=0,
-    pool_pre_ping=False,
-    pool_recycle=-1,
+    # Serverless connection settings - no persistent connections
+    pool_size=1,        # Single connection per function
+    max_overflow=0,     # No overflow in serverless
+    pool_pre_ping=False, # No need to ping in serverless
+    pool_recycle=300,   # Recycle connections after 5 minutes
+    pool_timeout=30,    # Connection timeout
 )
 
 # Create async session maker
