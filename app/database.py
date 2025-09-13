@@ -7,15 +7,25 @@ from app.config import settings
 # Create shared Base for all models
 Base = declarative_base()
 
-# Create async database engine
+# Create async database engine with PgBouncer compatibility
 engine = create_async_engine(
     settings.database_url.replace("postgresql://", "postgresql+asyncpg://"),
-    echo=True,  # Set to False in production
+    echo=False,  # Disabled in production for better performance
     future=True,
-    # Fix for pgbouncer transaction mode - disable prepared statements
+    # PgBouncer compatibility settings
     connect_args={
-        "statement_cache_size": 0,
-    }
+        "statement_cache_size": 0,  # Disable prepared statements for PgBouncer
+        "prepared_statement_cache_size": 0,  # Additional cache disable
+        "server_settings": {
+            "application_name": "notes_app_backend",
+            "jit": "off",  # Disable JIT for better PgBouncer compatibility
+        }
+    },
+    # Pool settings for better connection management
+    pool_size=5,
+    max_overflow=10,
+    pool_pre_ping=True,  # Verify connections before use
+    pool_recycle=3600,   # Recycle connections every hour
 )
 
 # Create async session maker
@@ -37,13 +47,3 @@ async def get_db():
             await session.close()
 
 
-async def create_tables():
-    """
-    Create all tables in the database
-    """
-    # Import models to ensure they are registered with Base
-    from app.models.note import Note
-    from app.models.user import User
-    
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)

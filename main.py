@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 import logging
 
 from app.config import settings
-from app.database import create_tables
 from app.routers import notes
 
 # Configure logging
@@ -19,14 +18,7 @@ async def lifespan(app: FastAPI):
     """
     # Startup
     logger.info("Starting up Notes App Backend...")
-    
-    # Create database tables
-    try:
-        await create_tables()
-        logger.info("Database tables created successfully")
-    except Exception as e:
-        logger.error(f"Failed to create database tables: {e}")
-        # Continue without raising error for graceful degradation
+    logger.info("Using Supabase managed database - no table creation needed")
     
     yield
     

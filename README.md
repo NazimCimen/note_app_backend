@@ -96,6 +96,8 @@ pip install -r requirements.txt
 ```
 
 ### 4. Environment Configuration
+
+#### For Local Development
 Create a `.env` file in the root directory:
 
 ```env
@@ -104,7 +106,7 @@ SUPABASE_URL=https://your-project.supabase.co
 SUPABASE_KEY=your-anon-public-key
 SUPABASE_JWT_SECRET=your-jwt-secret
 
-# Database Configuration
+# Database Configuration (Local PostgreSQL)
 DATABASE_URL=postgresql://username:password@localhost:5432/notes_db
 
 # API Configuration
@@ -112,6 +114,26 @@ API_V1_STR=/api/v1
 PROJECT_NAME=Notes App Backend
 DEBUG=true
 ```
+
+#### For Railway Deployment with Supabase
+Use these environment variables in Railway:
+
+```env
+# Supabase Configuration
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_KEY=your-anon-public-key
+SUPABASE_JWT_SECRET=your-jwt-secret
+
+# Database Configuration (Supabase with PgBouncer)
+DATABASE_URL=postgresql://postgres.vrobyncvsszbtsipnyfu:your-password@aws-1-eu-central-1.pooler.supabase.com:6543/postgres
+
+# API Configuration
+API_V1_STR=/api/v1
+PROJECT_NAME=Notes App Backend
+DEBUG=false
+```
+
+> **Important**: Use the **pooled connection** (port 6543) for Railway deployment, not the direct connection (port 5432). This ensures compatibility with PgBouncer.
 
 ### 5. Run the Application
 ```bash
@@ -147,9 +169,13 @@ This API uses Supabase JWT authentication. To use the endpoints:
 
 ## 💾 Database Schema
 
-### Note Table
+### Supabase Table Setup
+
+Run the following SQL in your **Supabase Dashboard → SQL Editor**:
+
 ```sql
-CREATE TABLE note (
+-- Create the note table
+CREATE TABLE IF NOT EXISTS note (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title VARCHAR NOT NULL,
     content TEXT NOT NULL,
@@ -158,7 +184,28 @@ CREATE TABLE note (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_note_user_id ON note(user_id);
+CREATE INDEX IF NOT EXISTS idx_note_created_at ON note(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_note_updated_at ON note(updated_at DESC);
+
+-- Enable Row Level Security (RLS)
+ALTER TABLE note ENABLE ROW LEVEL SECURITY;
+
+-- Create RLS policy to ensure users can only access their own notes
+CREATE POLICY "Users can only access their own notes" ON note
+    FOR ALL USING (auth.uid() = user_id);
+
+-- Grant necessary permissions
+GRANT ALL ON note TO authenticated;
+GRANT ALL ON note TO service_role;
 ```
+
+### Database Schema Overview
+- **note**: Stores user notes with RLS enabled
+- **auth.users**: Supabase built-in user table (managed automatically)
+- **RLS Policies**: Ensure data isolation between users
 
 ## 📝 Usage Examples
 
@@ -214,18 +261,33 @@ The API includes comprehensive error handling and validation:
 
 ## 🚀 Deployment
 
-### Environment Variables for Production
-```env
-DEBUG=false
-DATABASE_URL=postgresql://prod-user:password@prod-host:5432/prod_db
-# Add production Supabase credentials
-```
+### Railway Deployment (Recommended)
 
-### Deployment Platforms
-- **Railway**: Connect GitHub repo and deploy
+Railway is the easiest way to deploy this FastAPI application:
+
+1. **Connect Repository**: Link your GitHub repo to Railway
+2. **Set Environment Variables** in Railway dashboard:
+   ```env
+   SUPABASE_URL=https://your-project.supabase.co
+   SUPABASE_KEY=your-anon-public-key
+   SUPABASE_JWT_SECRET=your-jwt-secret
+   DATABASE_URL=postgresql://postgres.xxx:password@aws-1-eu-central-1.pooler.supabase.com:6543/postgres
+   DEBUG=false
+   ```
+3. **Deploy**: Railway will automatically detect and deploy your FastAPI app
+
+### Other Deployment Platforms
 - **Heroku**: Use Procfile with `web: python main.py`
-- **DigitalOcean App Platform**: Use App Spec configuration
+- **DigitalOcean App Platform**: Use App Spec configuration  
+- **Render**: Connect GitHub and deploy automatically
 - **AWS/GCP/Azure**: Deploy as containerized application
+
+### Important Notes for Production
+- Always use `DEBUG=false` in production
+- Use the **pooled connection** (port 6543) for Supabase
+- **Tables must be created manually** in Supabase dashboard (see Database Schema section)
+- Enable Row Level Security (RLS) policies in Supabase
+- The application does NOT auto-create tables - this is by design for production safety
 
 ## 🔧 Development
 
