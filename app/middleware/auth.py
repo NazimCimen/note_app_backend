@@ -29,7 +29,7 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
         )
     
     token = credentials.credentials
-    user_id = AuthService.get_user_id_from_token(token)
+    user_id = await AuthService.get_user_id_from_token(token)
     return user_id
 
 
@@ -50,7 +50,7 @@ async def get_optional_current_user(
     
     try:
         token = credentials.credentials
-        user_id = AuthService.get_user_id_from_token(token)
+        user_id = await AuthService.get_user_id_from_token(token)
         return user_id
     except HTTPException:
         return None

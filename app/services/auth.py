@@ -1,4 +1,4 @@
-from jose import JWTError, jwt
+import httpx
 from fastapi import HTTPException, status
 from app.config import settings
 from typing import Optional
@@ -14,61 +14,64 @@ class AuthService:
     """
     
     @staticmethod
-    def verify_jwt_token(token: str) -> dict:
+    async def verify_supabase_token(token: str) -> dict:
         """
-        Verify and decode JWT token from Supabase
+        Verify token using Supabase API
         
         Args:
-            token: JWT token string
+            token: JWT token string from Supabase
             
         Returns:
-            dict: Decoded token payload containing user information
+            dict: User information from Supabase
             
         Raises:
             HTTPException: If token is invalid or expired
         """
         try:
-            # Decode JWT token - skip signature verification for now
-            # TODO: Implement proper Supabase JWT verification
-            payload = jwt.decode(
-                token,
-                options={"verify_signature": False, "verify_aud": False}
-            )
+            # Use Supabase API to verify token
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "apikey": settings.supabase_key
+            }
             
-            # Extract user ID from token
-            user_id: str = payload.get("sub")
-            if user_id is None:
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Invalid token: missing user ID",
-                    headers={"WWW-Authenticate": "Bearer"},
+            async with httpx.AsyncClient() as client:
+                response = await client.get(
+                    f"{settings.supabase_url}/auth/v1/user",
+                    headers=headers
                 )
-            
-            return payload
-            
-        except JWTError as e:
-            logger.warning(f"JWT verification failed: {str(e)}")
+                
+                if response.status_code == 200:
+                    user_data = response.json()
+                    return user_data
+                else:
+                    raise HTTPException(
+                        status_code=status.HTTP_401_UNAUTHORIZED,
+                        detail="Invalid or expired token",
+                        headers={"WWW-Authenticate": "Bearer"},
+                    )
+                    
+        except httpx.RequestError as e:
+            logger.error(f"Supabase API request failed: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Could not validate credentials",
+                detail="Authentication service unavailable",
                 headers={"WWW-Authenticate": "Bearer"},
             )
     
     @staticmethod
-    def get_user_id_from_token(token: str) -> UUID:
+    async def get_user_id_from_token(token: str) -> UUID:
         """
-        Extract user ID from JWT token
+        Extract user ID from Supabase token
         
         Args:
-            token: JWT token string
+            token: JWT token string from Supabase
             
         Returns:
-            UUID: User ID from token (converted to UUID)
+            UUID: User ID from Supabase
         """
-        payload = AuthService.verify_jwt_token(token)
-        user_id_str = payload.get("sub")
+        user_data = await AuthService.verify_supabase_token(token)
+        user_id_str = user_data.get("id")
         if user_id_str:
-            # Convert string user ID to UUID to match database schema
             return UUID(user_id_str)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
