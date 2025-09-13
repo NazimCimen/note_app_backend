@@ -71,6 +71,9 @@ class AuthService:
                         headers={"WWW-Authenticate": "Bearer"},
                     )
             
+
+
+            
         except httpx.RequestError as e:
             logger.error(f"Supabase API request failed: {str(e)}")
             raise HTTPException(
