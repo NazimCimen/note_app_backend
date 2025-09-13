@@ -20,6 +20,8 @@ async def lifespan(app: FastAPI):
     # Startup
     logger.info("Starting up Notes App Backend...")
     
+
+
     # Create database tables
     try:
         await create_tables()  # Uncommented to enable database
