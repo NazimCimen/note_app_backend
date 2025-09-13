@@ -2,7 +2,6 @@
 
 A professional note-taking application backend built with **FastAPI** and **Supabase**. This API provides secure endpoints for creating, reading, updating, and deleting notes with user authentication.
 
-
 ## 🚀 Features
 
 - **JWT Authentication** with Supabase
