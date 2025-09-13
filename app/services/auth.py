@@ -1,10 +1,10 @@
 import jwt
+from jwt import PyJWKClient
 from fastapi import HTTPException, status
 from app.config import settings
 from typing import Optional
 import logging
 from uuid import UUID
-import base64
 
 logger = logging.getLogger(__name__)
 
@@ -13,16 +13,16 @@ class AuthService:
     """
     Service for handling JWT authentication with Supabase
     
-    Bu servis JWT token'ları lokal olarak doğrular, bu sayede:
-    1. Daha hızlı çalışır (Supabase'e istek atmaz)
-    2. Daha güvenilir (network bağımlılığı yok)
-    3. Production'da daha performanslı
+    Bu servis JWT token'ları JWKS ile doğrular (Supabase'in yeni sistemi):
+    1. RS256 algoritması kullanır (artık HS256 değil)
+    2. JWKS URL'den public key alır
+    3. Supabase'in güncel güvenlik standardına uygun
     """
     
     @staticmethod
     async def verify_supabase_token(token: str) -> dict:
         """
-        JWT token'ı lokal olarak doğrular
+        JWT token'ı JWKS ile doğrular (Supabase'in yeni sistemi)
         
         Args:
             token: Supabase'den gelen JWT token string
@@ -34,12 +34,21 @@ class AuthService:
             HTTPException: Token geçersiz, süresi dolmuş veya bozuksa
         """
         try:
-            # JWT token'ı Supabase JWT secret ile decode et
+            # JWKS URL - Supabase'in public key'lerini içerir
+            jwks_url = f"{settings.supabase_url}/auth/v1/.well-known/jwks.json"
+            
+            # JWKS client oluştur
+            jwks_client = PyJWKClient(jwks_url)
+            
+            # Token'dan signing key'i al
+            signing_key = jwks_client.get_signing_key_from_jwt(token)
+            
+            # Token'ı RS256 ile doğrula (artık HS256 değil!)
             payload = jwt.decode(
                 token,
-                settings.supabase_jwt_secret,  # .env dosyasındaki secret
-                algorithms=["HS256"],
-                audience="authenticated",  # Supabase standart audience
+                signing_key.key,
+                algorithms=["RS256"],  # Supabase artık RS256 kullanıyor
+                audience="authenticated",
                 options={
                     "verify_signature": True,
                     "verify_exp": True,  # Expiry time kontrol et
