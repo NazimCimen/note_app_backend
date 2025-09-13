@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     api_v1_str: str = "/api/v1"
     project_name: str = "Notes App Backend"
     
+    # Environment
+    debug: bool = True
+    
     class Config:
         env_file = ".env"
         case_sensitive = False
