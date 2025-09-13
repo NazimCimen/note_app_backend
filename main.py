@@ -87,6 +87,9 @@ async def health_check():
         "version": "1.0.0"
     }
 
+# For Vercel deployment
+handler = app
+
 if __name__ == "__main__":
     import uvicorn
     import os
