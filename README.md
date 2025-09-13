@@ -261,36 +261,9 @@ The API includes comprehensive error handling and validation:
 
 ## 🚀 Deployment
 
-### Vercel Deployment (Recommended for Supabase)
+### Railway Deployment (Recommended)
 
-Vercel is excellent for FastAPI + Supabase applications due to serverless architecture:
-
-1. **Install Vercel CLI**:
-   ```bash
-   npm i -g vercel
-   ```
-
-2. **Deploy from your project directory**:
-   ```bash
-   vercel
-   ```
-
-3. **Set Environment Variables** in Vercel dashboard:
-   ```env
-   SUPABASE_URL=https://your-project.supabase.co
-   SUPABASE_KEY=your-anon-public-key
-   SUPABASE_JWT_SECRET=your-jwt-secret
-   DATABASE_URL=postgresql://postgres.xxx:password@aws-1-eu-central-1.pooler.supabase.com:6543/postgres
-   DEBUG=false
-   ```
-
-**Why Vercel + Supabase?**
-- ✅ No connection pooling issues
-- ✅ Serverless functions = fresh connections
-- ✅ Auto-scaling
-- ✅ Built-in CDN
-
-### Railway Deployment (Alternative)
+Railway is the easiest way to deploy this FastAPI application:
 
 1. **Connect Repository**: Link your GitHub repo to Railway
 2. **Set Environment Variables** in Railway dashboard:
