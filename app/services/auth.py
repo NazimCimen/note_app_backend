@@ -1,5 +1,4 @@
 import jwt
-from jwt import PyJWKClient
 from fastapi import HTTPException, status
 from app.config import settings
 from typing import Optional
@@ -13,16 +12,16 @@ class AuthService:
     """
     Service for handling JWT authentication with Supabase
     
-    Bu servis JWT token'ları JWKS ile doğrular (Supabase'in yeni sistemi):
-    1. RS256 algoritması kullanır (artık HS256 değil)
-    2. JWKS URL'den public key alır
-    3. Supabase'in güncel güvenlik standardına uygun
+    Bu servis JWT token'ları lokal olarak doğrular:
+    1. HS256 algoritması kullanır (Supabase standardı)
+    2. SUPABASE_JWT_SECRET ile doğrular
+    3. Hızlı ve güvenilir
     """
     
     @staticmethod
     async def verify_supabase_token(token: str) -> dict:
         """
-        JWT token'ı JWKS ile doğrular (Supabase'in yeni sistemi)
+        JWT token'ı HS256 ile doğrular (Supabase standard sistemi)
         
         Args:
             token: Supabase'den gelen JWT token string
@@ -34,20 +33,11 @@ class AuthService:
             HTTPException: Token geçersiz, süresi dolmuş veya bozuksa
         """
         try:
-            # JWKS URL - Supabase'in public key'lerini içerir
-            jwks_url = f"{settings.supabase_url}/auth/v1/.well-known/jwks.json"
-            
-            # JWKS client oluştur
-            jwks_client = PyJWKClient(jwks_url)
-            
-            # Token'dan signing key'i al
-            signing_key = jwks_client.get_signing_key_from_jwt(token)
-            
-            # Token'ı RS256 ile doğrula (artık HS256 değil!)
+            # JWT token'ı Supabase JWT secret ile decode et
             payload = jwt.decode(
                 token,
-                signing_key.key,
-                algorithms=["RS256"],  # Supabase artık RS256 kullanıyor
+                settings.supabase_jwt_secret,  # .env dosyasındaki secret
+                algorithms=["HS256"],  # Supabase hâlâ HS256 kullanıyor
                 audience="authenticated",
                 options={
                     "verify_signature": True,
