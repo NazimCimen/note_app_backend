@@ -54,20 +54,15 @@ async def get_db() -> AsyncSession:
 
 async def init_db():
     """
-    Initialize database - create tables if they don't exist
+    Initialize database - For Supabase, tables already exist
     
-    Note: For Supabase, tables should be created via Supabase Dashboard or migrations
-    This function is kept for compatibility but won't create tables in production
+    Note: Tables are managed via Supabase Dashboard
+    This function is kept for compatibility but doesn't create tables
     """
     try:
-        async with engine.begin() as conn:
-            # In production with Supabase, tables should already exist
-            # This is just for local development or testing
-            if settings.debug:
-                logger.info("Debug mode: Would create tables if needed")
-                # await conn.run_sync(Base.metadata.create_all)
-            else:
-                logger.info("Production mode: Using existing Supabase tables")
+        logger.info("Using existing Supabase tables - no initialization needed")
+        # Tables already exist in Supabase, no need to create them
+        pass
     except Exception as e:
         logger.error(f"Database initialization error: {e}")
         raise

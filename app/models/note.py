@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, DateTime, Boolean, ForeignKey
+from sqlalchemy import Column, String, Text, DateTime, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
@@ -18,7 +18,7 @@ class Note(Base):
     title = Column(String, nullable=False)
     content = Column(Text, nullable=False)
     is_favorite = Column(Boolean, default=False, nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("user.id"), nullable=False, index=True)
+    user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     
