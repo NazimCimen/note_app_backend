@@ -1,67 +1,85 @@
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.pool import NullPool
-from sqlalchemy import event
+import logging
 from app.config import settings
 
-# Create shared Base for all models
+logger = logging.getLogger(__name__)
+
+# Create the declarative base
 Base = declarative_base()
 
-def get_database_url():
-    """
-    Convert DATABASE_URL to asyncpg format for Supabase
-    """
-    url = settings.database_url
-    
-    # Convert postgresql:// to postgresql+asyncpg://
-    if url.startswith("postgresql://"):
-        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
-    
-    # Remove pgbouncer parameter if present
-    if "?pgbouncer=true" in url:
-        url = url.replace("?pgbouncer=true", "")
-    if "&pgbouncer=true" in url:
-        url = url.replace("&pgbouncer=true", "")
-    
-    return url
-
-# Create async engine with maximum PgBouncer compatibility
+# Create async engine with Supabase PostgreSQL
+# Using connection pooling URL for better performance on Vercel
+# Convert postgresql:// to postgresql+asyncpg:// for asyncpg driver
+database_url = settings.database_url.replace("postgresql://", "postgresql+asyncpg://")
 engine = create_async_engine(
-    get_database_url(),
-    echo=False,
-    future=True,
-    poolclass=NullPool,  # No connection pooling - let PgBouncer handle it
+    database_url,
+    echo=settings.debug,  # Log SQL queries in debug mode
+    poolclass=NullPool,   # Disable connection pooling for serverless (Vercel)
+    pool_pre_ping=True,   # Verify connections before use
+    pool_recycle=300,     # Recycle connections every 5 minutes
     connect_args={
-        "statement_cache_size": 0,  # Disable prepared statements
-        "command_timeout": 60,
         "server_settings": {
-            "application_name": "notes_app_backend",
-            "jit": "off",  # Disable JIT compilation for better PgBouncer compatibility
+            "jit": "off",  # Disable JIT for faster connection
         }
     }
 )
 
-# Event listener removed - not needed with NullPool and disabled prepared statements
-
-# Create async session maker
-AsyncSessionLocal = sessionmaker(
-    engine, 
-    class_=AsyncSession, 
-    expire_on_commit=False,
-    autoflush=True,
-    autocommit=False
+# Create async session factory
+AsyncSessionLocal = async_sessionmaker(
+    engine,
+    class_=AsyncSession,
+    expire_on_commit=False
 )
 
-async def get_db():
+
+async def get_db() -> AsyncSession:
     """
     Dependency to get database session
+    
+    Yields:
+        AsyncSession: Database session
     """
     async with AsyncSessionLocal() as session:
         try:
             yield session
-        except Exception:
+        except Exception as e:
+            logger.error(f"Database session error: {e}")
             await session.rollback()
             raise
         finally:
             await session.close()
+
+
+async def init_db():
+    """
+    Initialize database - create tables if they don't exist
+    
+    Note: For Supabase, tables should be created via Supabase Dashboard or migrations
+    This function is kept for compatibility but won't create tables in production
+    """
+    try:
+        async with engine.begin() as conn:
+            # In production with Supabase, tables should already exist
+            # This is just for local development or testing
+            if settings.debug:
+                logger.info("Debug mode: Would create tables if needed")
+                # await conn.run_sync(Base.metadata.create_all)
+            else:
+                logger.info("Production mode: Using existing Supabase tables")
+    except Exception as e:
+        logger.error(f"Database initialization error: {e}")
+        raise
+
+
+async def close_db():
+    """
+    Close database connections
+    """
+    try:
+        await engine.dispose()
+        logger.info("Database connections closed successfully")
+    except Exception as e:
+        logger.error(f"Error closing database connections: {e}")
+        raise
