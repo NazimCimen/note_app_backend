@@ -125,7 +125,7 @@ SUPABASE_KEY=your-anon-public-key
 SUPABASE_JWT_SECRET=your-jwt-secret
 
 # Database Configuration (Supabase with PgBouncer)
-DATABASE_URL=postgresql://postgres.vrobyncvsszbtsipnyfu:your-password@aws-1-eu-central-1.pooler.supabase.com:6543/postgres
+DATABASE_URL=postgresql://postgres.vrobyncvsszbtsipnyfu:your-password@aws-1-eu-central-1.pooler.supabase.com:6543/postgres?pgbouncer=true
 
 # API Configuration
 API_V1_STR=/api/v1
@@ -271,7 +271,7 @@ Railway is the easiest way to deploy this FastAPI application:
    SUPABASE_URL=https://your-project.supabase.co
    SUPABASE_KEY=your-anon-public-key
    SUPABASE_JWT_SECRET=your-jwt-secret
-   DATABASE_URL=postgresql://postgres.xxx:password@aws-1-eu-central-1.pooler.supabase.com:6543/postgres
+   DATABASE_URL=postgresql://postgres.xxx:password@aws-1-eu-central-1.pooler.supabase.com:6543/postgres?pgbouncer=true
    DEBUG=false
    ```
 3. **Deploy**: Railway will automatically detect and deploy your FastAPI app

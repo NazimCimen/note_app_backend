@@ -7,25 +7,33 @@ from app.config import settings
 # Create shared Base for all models
 Base = declarative_base()
 
-# Create async database engine with PgBouncer compatibility
+# Create async database engine for Supabase with PgBouncer
+def get_database_url():
+    """
+    Convert DATABASE_URL to asyncpg format and ensure pgbouncer parameter is present
+    """
+    url = settings.database_url
+    
+    # Convert postgresql:// to postgresql+asyncpg://
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    
+    # Ensure pgbouncer=true parameter is present
+    if "pgbouncer=true" not in url:
+        separator = "&" if "?" in url else "?"
+        url += f"{separator}pgbouncer=true"
+    
+    return url
+
 engine = create_async_engine(
-    settings.database_url.replace("postgresql://", "postgresql+asyncpg://"),
-    echo=False,  # Disabled in production for better performance
+    get_database_url(),
+    echo=False,  # Disabled in production
     future=True,
-    # PgBouncer compatibility settings
-    connect_args={
-        "statement_cache_size": 0,  # Disable prepared statements for PgBouncer
-        "prepared_statement_cache_size": 0,  # Additional cache disable
-        "server_settings": {
-            "application_name": "notes_app_backend",
-            "jit": "off",  # Disable JIT for better PgBouncer compatibility
-        }
-    },
-    # Pool settings for better connection management
-    pool_size=5,
-    max_overflow=10,
-    pool_pre_ping=True,  # Verify connections before use
-    pool_recycle=3600,   # Recycle connections every hour
+    # Minimal settings - let pgbouncer handle connection management
+    pool_size=1,
+    max_overflow=0,
+    pool_pre_ping=False,  # Let pgbouncer handle this
+    pool_recycle=-1,      # No connection recycling
 )
 
 # Create async session maker
