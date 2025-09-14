@@ -1,8 +1,6 @@
 import jwt
-import httpx
 from fastapi import HTTPException, status
 from app.config import settings
-from typing import Optional
 import logging
 from uuid import UUID
 
@@ -66,67 +64,6 @@ class AuthService:
             )
         except Exception as e:
             logger.error(f"Unexpected error during local token verification: {str(e)}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Token verification failed",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-    
-    @staticmethod
-    async def verify_supabase_token_api(token: str) -> dict:
-        """
-        Verifies JWT token with Supabase API (SLOW METHOD - kept as backup)
-        
-        This method is slower but more reliable:
-        - Sends token to Supabase API for verification
-        - Returns user information from Supabase
-        - Works even if JWT secret changes
-        
-        Args:
-            token: JWT token string from Supabase
-            
-        Returns:
-            dict: User information from Supabase API
-            
-        Raises:
-            HTTPException: If token is invalid, expired or malformed
-        """
-        try:
-            # Verify token with Supabase API
-            headers = {
-                "Authorization": f"Bearer {token}",
-                "apikey": settings.supabase_key,
-                "Content-Type": "application/json"
-            }
-            
-            async with httpx.AsyncClient() as client:
-                # Request to Supabase user endpoint
-                response = await client.get(
-                    f"{settings.supabase_url}/auth/v1/user",
-                    headers=headers
-                )
-                
-                if response.status_code == 200:
-                    user_data = response.json()
-                    logger.info(f"JWT token successfully verified via Supabase API for user: {user_data.get('id', 'unknown')}")
-                    return user_data
-                else:
-                    logger.warning(f"Supabase API returned {response.status_code}: {response.text}")
-                    raise HTTPException(
-                        status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail="Token verification failed with Supabase",
-                        headers={"WWW-Authenticate": "Bearer"},
-                    )
-            
-        except httpx.RequestError as e:
-            logger.error(f"Supabase API request failed: {str(e)}")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Authentication service temporarily unavailable",
-                headers={"WWW-Authenticate": "Bearer"},
-            )
-        except Exception as e:
-            logger.error(f"Unexpected error during token verification: {str(e)}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Token verification failed",
