@@ -2,27 +2,63 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from typing import Optional
 from uuid import UUID
+from enum import Enum
 
 from app.database import get_db
 from app.middleware.auth import get_current_user
 from app.services.note import NoteService
 from app.schemas.note import NoteCreate, NoteUpdate, NoteResponse, NoteListResponse
 
+
+class SearchIn(str, Enum):
+    """
+    Enum for specifying where to search in notes
+    """
+    BOTH = "both"         # Search in both title and content (default)
+    TITLE = "title"       # Search only in title
+    CONTENT = "content"   # Search only in content
+
+
+class NoteFilter(str, Enum):
+    """
+    Enum for filtering notes by different criteria
+    """
+    ALL = "all"           # Tüm notlar (default)
+    FAVORITES = "favorites"  # Sadece favoriler
+    RECENT = "recent"     # Son eklenenler (7 gün)
+    OLDEST = "oldest"     # En eskiler önce
+
+
+class NoteSortBy(str, Enum):
+    """
+    Enum for sorting notes
+    """
+    UPDATED_DESC = "updated_desc"    # En son güncellenen (default)
+    UPDATED_ASC = "updated_asc"      # En eski güncellenen
+    CREATED_DESC = "created_desc"    # En son oluşturulan
+    CREATED_ASC = "created_asc"      # En eski oluşturulan
+
 router = APIRouter(prefix="/notes", tags=["notes"])
 
 
 @router.get("/", response_model=NoteListResponse)
 async def get_notes(
-    search: Optional[str] = Query(None, description="Search term for title or content"),
+    search: Optional[str] = Query(None, description="Search term for notes"),
+    search_in: SearchIn = Query(SearchIn.BOTH, description="Where to search: title, content, or both"),
+    filter_by: NoteFilter = Query(NoteFilter.ALL, description="Filter notes by category"),
+    sort_by: NoteSortBy = Query(NoteSortBy.UPDATED_DESC, description="Sort order for notes"),
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Items per page"),
     db: AsyncSession = Depends(get_db),
     current_user: UUID = Depends(get_current_user)
 ):
     """
-    Get all notes for the authenticated user with optional search and pagination
+    Get all notes for the authenticated user with optional search, filtering and pagination
     
-    - **search**: Optional search term to filter notes by title or content (case-insensitive)
+    - **search**: Optional search term to filter notes (case-insensitive)
+    - **search_in**: Where to search - 'both' (title and content), 'title' only, or 'content' only
+    - **filter_by**: Filter notes by category - 'all', 'favorites', 'recent' (7 days), or 'oldest'
+    - **sort_by**: Sort order - 'updated_desc', 'updated_asc', 'created_desc', or 'created_asc'
     - **page**: Page number for pagination (starts from 1)
     - **per_page**: Number of items per page (max 100)
     """
@@ -32,6 +68,9 @@ async def get_notes(
         db=db,
         user_id=current_user,
         search=search,
+        search_in=search_in.value,
+        filter_by=filter_by.value,
+        sort_by=sort_by.value,
         skip=skip,
         limit=per_page
     )
