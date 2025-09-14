@@ -16,13 +16,12 @@ database_url = settings.database_url.replace("postgresql://", "postgresql+asyncp
 engine = create_async_engine(
     database_url,
     echo=settings.debug,  # Log SQL queries in debug mode
-    poolclass=NullPool,   # Disable connection pooling for serverless (Vercel)
-    pool_pre_ping=True,   # Verify connections before use
-    pool_recycle=300,     # Recycle connections every 5 minutes
+    poolclass=NullPool,   # No connection pooling (Vercel-safe)
     connect_args={
         "server_settings": {
             "jit": "off",  # Disable JIT for faster connection
-        }
+        },
+        "command_timeout": 30,  # Query timeout
     }
 )
 
