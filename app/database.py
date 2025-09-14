@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.pool import NullPool
+from sqlalchemy.pool import QueuePool
 import logging
 from app.config import settings
 
@@ -16,7 +16,9 @@ database_url = settings.database_url.replace("postgresql://", "postgresql+asyncp
 engine = create_async_engine(
     database_url,
     echo=settings.debug,  # Log SQL queries in debug mode
-    poolclass=NullPool,   # Disable connection pooling for serverless (Vercel)
+    poolclass=QueuePool,  # Enable connection pooling for better performance
+    pool_size=10,         # Number of connections to maintain in pool
+    max_overflow=20,      # Additional connections beyond pool_size
     pool_pre_ping=True,   # Verify connections before use
     pool_recycle=300,     # Recycle connections every 5 minutes
     connect_args={
