@@ -45,7 +45,7 @@ class NoteService:
         search: Optional[str] = None,
         search_in: str = "both",
         filter_by: str = "all",
-        sort_by: str = "updated_desc",
+        sort_by: str = "newest",
         skip: int = 0,
         limit: int = 100
     ) -> tuple[List[Note], int]:
@@ -57,8 +57,8 @@ class NoteService:
             user_id: ID of the authenticated user (UUID)
             search: Optional search term for title/content
             search_in: Where to search - "both", "title", or "content"
-            filter_by: Filter by category - "all", "favorites", "recent", or "oldest"
-            sort_by: Sort order - "updated_desc", "updated_asc", "created_desc", or "created_asc"
+            filter_by: Filter by category - "all" or "favorites"
+            sort_by: Sort order - "newest" or "oldest"
             skip: Number of records to skip (pagination)
             limit: Maximum number of records to return
             
@@ -71,11 +71,7 @@ class NoteService:
         # Apply category filters
         if filter_by == "favorites":
             query = query.where(Note.is_favorite == True)
-        elif filter_by == "recent":
-            from datetime import datetime, timedelta, timezone
-            seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
-            query = query.where(Note.created_at >= seven_days_ago)
-        # "oldest" and "all" don't need additional WHERE clauses, handled by ORDER BY
+        # "all" doesn't need additional WHERE clauses
         
         # Add search filter if provided
         if search:
@@ -99,14 +95,10 @@ class NoteService:
         total = total_result.scalar()
         
         # Apply sorting
-        if sort_by == "updated_desc":
+        if sort_by == "newest":
             query = query.order_by(Note.updated_at.desc())
-        elif sort_by == "updated_asc":
+        elif sort_by == "oldest":
             query = query.order_by(Note.updated_at.asc())
-        elif sort_by == "created_desc":
-            query = query.order_by(Note.created_at.desc())
-        elif sort_by == "created_asc":
-            query = query.order_by(Note.created_at.asc())
         else:
             # Default fallback
             query = query.order_by(Note.updated_at.desc())
