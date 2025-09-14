@@ -43,16 +43,22 @@ class NoteService:
         db: AsyncSession, 
         user_id: UUID, 
         search: Optional[str] = None,
+        search_in: str = "both",
+        filter_by: str = "all",
+        sort_by: str = "updated_desc",
         skip: int = 0,
         limit: int = 100
     ) -> tuple[List[Note], int]:
         """
-        Get notes for the authenticated user with optional search
+        Get notes for the authenticated user with optional search, filtering, and sorting
         
         Args:
             db: Database session
             user_id: ID of the authenticated user (UUID)
             search: Optional search term for title/content
+            search_in: Where to search - "both", "title", or "content"
+            filter_by: Filter by category - "all", "favorites", "recent", or "oldest"
+            sort_by: Sort order - "updated_desc", "updated_asc", "created_desc", or "created_asc"
             skip: Number of records to skip (pagination)
             limit: Maximum number of records to return
             
@@ -62,12 +68,29 @@ class NoteService:
         # Base query for user's notes
         query = select(Note).where(Note.user_id == user_id)
         
+        # Apply category filters
+        if filter_by == "favorites":
+            query = query.where(Note.is_favorite == True)
+        elif filter_by == "recent":
+            from datetime import datetime, timedelta, timezone
+            seven_days_ago = datetime.now(timezone.utc) - timedelta(days=7)
+            query = query.where(Note.created_at >= seven_days_ago)
+        # "oldest" and "all" don't need additional WHERE clauses, handled by ORDER BY
+        
         # Add search filter if provided
         if search:
-            search_filter = or_(
-                Note.title.ilike(f"%{search}%"),
-                Note.content.ilike(f"%{search}%")
-            )
+            if search_in == "title":
+                # Search only in title
+                search_filter = Note.title.ilike(f"%{search}%")
+            elif search_in == "content":
+                # Search only in content
+                search_filter = Note.content.ilike(f"%{search}%")
+            else:  # "both" (default)
+                # Search in both title and content
+                search_filter = or_(
+                    Note.title.ilike(f"%{search}%"),
+                    Note.content.ilike(f"%{search}%")
+                )
             query = query.where(search_filter)
         
         # Get total count
@@ -75,8 +98,21 @@ class NoteService:
         total_result = await db.execute(count_query)
         total = total_result.scalar()
         
-        # Apply pagination and ordering
-        query = query.order_by(Note.updated_at.desc()).offset(skip).limit(limit)
+        # Apply sorting
+        if sort_by == "updated_desc":
+            query = query.order_by(Note.updated_at.desc())
+        elif sort_by == "updated_asc":
+            query = query.order_by(Note.updated_at.asc())
+        elif sort_by == "created_desc":
+            query = query.order_by(Note.created_at.desc())
+        elif sort_by == "created_asc":
+            query = query.order_by(Note.created_at.asc())
+        else:
+            # Default fallback
+            query = query.order_by(Note.updated_at.desc())
+        
+        # Apply pagination
+        query = query.offset(skip).limit(limit)
         
         # Execute query
         result = await db.execute(query)
