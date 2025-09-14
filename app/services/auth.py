@@ -13,18 +13,71 @@ class AuthService:
     """
     Service for handling JWT authentication with Supabase
     
-    This service validates JWT tokens using Supabase API (Production-ready):
-    - Independent of JWT secret changes
-    - Validates tokens directly with Supabase API
-    - Reliable and maintainable authentication
+    This service validates JWT tokens using LOCAL verification (FAST):
+    - Validates tokens locally without API calls
+    - Much faster than Supabase API verification
+    - Still secure with proper JWT validation
     """
     
     @staticmethod
-    async def verify_supabase_token(token: str) -> dict:
+    async def verify_supabase_token_local(token: str) -> dict:
         """
-        Verifies JWT token with Supabase API
+        Verifies JWT token LOCALLY (FAST METHOD)
         
-        This method is independent of JWT secrets:
+        This method is much faster than API calls:
+        - Validates JWT token locally using secret key
+        - No network requests to Supabase
+        - 10-100x faster than API verification
+        
+        Args:
+            token: JWT token string from Supabase
+            
+        Returns:
+            dict: User information from JWT payload
+            
+        Raises:
+            HTTPException: If token is invalid, expired or malformed
+        """
+        try:
+            # Verify token locally using Supabase JWT secret
+            payload = jwt.decode(
+                token,
+                settings.supabase_jwt_secret,
+                algorithms=["HS256"],
+                options={"verify_exp": True, "verify_aud": False}
+            )
+            
+            logger.info(f"JWT token successfully verified locally for user: {payload.get('sub', 'unknown')}")
+            return payload
+            
+        except jwt.ExpiredSignatureError:
+            logger.warning("JWT token has expired")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has expired",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        except jwt.InvalidTokenError as e:
+            logger.warning(f"Invalid JWT token: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid token",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error during local token verification: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token verification failed",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+    
+    @staticmethod
+    async def verify_supabase_token_api(token: str) -> dict:
+        """
+        Verifies JWT token with Supabase API (SLOW METHOD - kept as backup)
+        
+        This method is slower but more reliable:
         - Sends token to Supabase API for verification
         - Returns user information from Supabase
         - Works even if JWT secret changes
@@ -83,7 +136,7 @@ class AuthService:
     @staticmethod
     async def get_user_id_from_token(token: str) -> UUID:
         """
-        Extracts user ID from JWT token
+        Extracts user ID from JWT token using LOCAL verification (FAST)
         
         Args:
             token: JWT token string
@@ -94,27 +147,28 @@ class AuthService:
         Raises:
             HTTPException: If token is invalid or user ID not found
         """
-        user_data = await AuthService.verify_supabase_token(token)
+        # Use LOCAL verification for speed
+        user_data = await AuthService.verify_supabase_token_local(token)
         
-        # User ID is found in the "id" field of Supabase API response
-        user_id_str = user_data.get("id")
+        # User ID is found in the "sub" field of JWT payload
+        user_id_str = user_data.get("sub")
         
         if not user_id_str:
-            logger.error("Supabase API response missing 'id' field")
+            logger.error("JWT payload missing 'sub' field")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid response: user ID not found",
+                detail="Invalid token: user ID not found",
                 headers={"WWW-Authenticate": "Bearer"},
             )
         
         try:
             user_uuid = UUID(user_id_str)
-            logger.info(f"Successfully extracted user ID from Supabase API: {user_uuid}")
+            logger.info(f"Successfully extracted user ID from JWT: {user_uuid}")
             return user_uuid
         except ValueError:
-            logger.error(f"Invalid UUID format from Supabase: {user_id_str}")
+            logger.error(f"Invalid UUID format from JWT: {user_id_str}")
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid user ID format from Supabase",
+                detail="Invalid user ID format in token",
                 headers={"WWW-Authenticate": "Bearer"},
             )
