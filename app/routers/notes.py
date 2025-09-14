@@ -52,6 +52,7 @@ async def get_notes(
     db: AsyncSession = Depends(get_db),
     current_user: UUID = Depends(get_current_user)
 ):
+
     """
     Get all notes for the authenticated user with optional search, filtering and pagination
     
