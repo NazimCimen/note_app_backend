@@ -89,11 +89,6 @@ class NoteService:
                 )
             query = query.where(search_filter)
         
-        # Get total count
-        count_query = select(func.count()).select_from(query.subquery())
-        total_result = await db.execute(count_query)
-        total = total_result.scalar()
-        
         # Apply sorting
         if sort_by == "newest":
             query = query.order_by(Note.updated_at.desc())
@@ -103,12 +98,27 @@ class NoteService:
             # Default fallback
             query = query.order_by(Note.updated_at.desc())
         
-        # Apply pagination
-        query = query.offset(skip).limit(limit)
+        # OPTIMIZED: Get count and data in single query using window function
+        # This eliminates the need for a separate count query
+        optimized_query = select(
+            Note,
+            func.count().over().label('total_count')
+        ).select_from(query.subquery())
         
-        # Execute query
-        result = await db.execute(query)
-        notes = result.scalars().all()
+        # Apply pagination
+        optimized_query = optimized_query.offset(skip).limit(limit)
+        
+        # Execute single optimized query
+        result = await db.execute(optimized_query)
+        rows = result.all()
+        
+        # Extract notes and total count from single result
+        if rows:
+            notes = [row[0] for row in rows]  # Note objects
+            total = rows[0][1]  # Total count from window function
+        else:
+            notes = []
+            total = 0
         
         return list(notes), total
     
