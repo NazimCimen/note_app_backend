@@ -89,6 +89,11 @@ class NoteService:
                 )
             query = query.where(search_filter)
         
+        # Get total count
+        count_query = select(func.count()).select_from(query.subquery())
+        total_result = await db.execute(count_query)
+        total = total_result.scalar()
+        
         # Apply sorting
         if sort_by == "newest":
             query = query.order_by(Note.updated_at.desc())
@@ -97,11 +102,6 @@ class NoteService:
         else:
             # Default fallback
             query = query.order_by(Note.updated_at.desc())
-        
-        # Get total count
-        count_query = select(func.count()).select_from(query.subquery())
-        total_result = await db.execute(count_query)
-        total = total_result.scalar()
         
         # Apply pagination
         query = query.offset(skip).limit(limit)
