@@ -6,6 +6,9 @@ from app.schemas.note import NoteCreate, NoteUpdate
 from typing import Optional, List
 from fastapi import HTTPException, status
 from uuid import UUID
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class NoteService:
@@ -71,6 +74,7 @@ class NoteService:
         # Apply category filters
         if filter_by == "favorites":
             query = query.where(Note.is_favorite == True)
+            logger.info(f"Applied favorites filter for user {user_id}")
         # "all" doesn't need additional WHERE clauses
         
         # Add search filter if provided
@@ -109,6 +113,8 @@ class NoteService:
         # Execute query
         result = await db.execute(query)
         notes = result.scalars().all()
+        
+        logger.info(f"Found {len(notes)} notes for user {user_id} with filter '{filter_by}' and sort '{sort_by}'")
         
         return list(notes), total
     
