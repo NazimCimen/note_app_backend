@@ -23,20 +23,16 @@ class NoteFilter(str, Enum):
     """
     Enum for filtering notes by different criteria
     """
-    ALL = "all"           # Tüm notlar (default)
-    FAVORITES = "favorites"  # Sadece favoriler
-    RECENT = "recent"     # Son eklenenler (7 gün)
-    OLDEST = "oldest"     # En eskiler önce
+    ALL = "all"                    # Tüm notlar
+    FAVORITES = "favorites"        # Sadece favoriler
 
 
-class NoteSortBy(str, Enum):
+class NoteSort(str, Enum):
     """
     Enum for sorting notes
     """
-    UPDATED_DESC = "updated_desc"    # En son güncellenen (default)
-    UPDATED_ASC = "updated_asc"      # En eski güncellenen
-    CREATED_DESC = "created_desc"    # En son oluşturulan
-    CREATED_ASC = "created_asc"      # En eski oluşturulan
+    NEWEST = "newest"              # En yeniler (updated_at desc)
+    OLDEST = "oldest"              # En eskiler (updated_at asc)
 
 router = APIRouter(prefix="/notes", tags=["notes"])
 
@@ -45,8 +41,8 @@ router = APIRouter(prefix="/notes", tags=["notes"])
 async def get_notes(
     search: Optional[str] = Query(None, description="Search term for notes"),
     search_in: SearchIn = Query(SearchIn.BOTH, description="Where to search: title, content, or both"),
-    filter_by: NoteFilter = Query(NoteFilter.ALL, description="Filter notes by category"),
-    sort_by: NoteSortBy = Query(NoteSortBy.UPDATED_DESC, description="Sort order for notes"),
+    filter_by: NoteFilter = Query(NoteFilter.ALL, description="Filter notes: all or favorites"),
+    sort_by: NoteSort = Query(NoteSort.NEWEST, description="Sort notes: newest or oldest"),
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Items per page"),
     db: AsyncSession = Depends(get_db),
@@ -57,8 +53,8 @@ async def get_notes(
     
     - **search**: Optional search term to filter notes (case-insensitive)
     - **search_in**: Where to search - 'both' (title and content), 'title' only, or 'content' only
-    - **filter_by**: Filter notes by category - 'all', 'favorites', 'recent' (7 days), or 'oldest'
-    - **sort_by**: Sort order - 'updated_desc', 'updated_asc', 'created_desc', or 'created_asc'
+    - **filter_by**: Filter notes by category - 'all' or 'favorites'
+    - **sort_by**: Sort notes - 'newest' (updated_at desc) or 'oldest' (updated_at asc)
     - **page**: Page number for pagination (starts from 1)
     - **per_page**: Number of items per page (max 100)
     """
