@@ -14,16 +14,9 @@ logger = logging.getLogger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
-    Application lifespan manager - handles startup and shutdown events
+    Application lifespan manager
     """
-    # Startup
-    logger.info("Starting up Notes App Backend...")
-    logger.info("Using Supabase managed database - no table creation needed")
-    
     yield
-    
-    # Shutdown
-    logger.info("Shutting down Notes App Backend...")
 
 
 # Create FastAPI instance
@@ -36,17 +29,14 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add CORS middleware to allow frontend connections
-# Use specific origins in production for security
+# CORS middleware for frontend connections
 allowed_origins = [
-    "http://localhost:3000",  # Flutter web development
+    "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://your-flutter-app.vercel.app",  # Production Flutter web
+    "https://your-flutter-app.vercel.app",
     "https://your-flutter-app.netlify.app",
-    # Mobile apps don't need origins, only web apps
 ]
 
-# Allow all origins in development, restrict in production
 if settings.debug:
     allowed_origins = ["*"]
 
@@ -65,7 +55,7 @@ app.include_router(notes.router, prefix=settings.api_v1_str)
 @app.get("/")
 async def root():
     """
-    Root endpoint that returns API information
+    Root endpoint
     """
     return {
         "message": f"Welcome to {settings.project_name}!",
@@ -79,7 +69,7 @@ async def root():
 @app.get("/health")
 async def health_check():
     """
-    Health check endpoint to verify the API is working
+    Health check endpoint
     """
     return {
         "status": "healthy",
