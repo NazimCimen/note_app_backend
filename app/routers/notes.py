@@ -11,52 +11,39 @@ from app.schemas.note import NoteCreate, NoteUpdate, NoteResponse, NoteListRespo
 
 
 class SearchIn(str, Enum):
-    """
-    Enum for specifying where to search in notes
-    """
-    BOTH = "both"         # Search in both title and content (default)
-    TITLE = "title"       # Search only in title
-    CONTENT = "content"   # Search only in content
+    """Search scope options"""
+    BOTH = "both"
+    TITLE = "title"
+    CONTENT = "content"
 
 
 class NoteFilter(str, Enum):
-    """
-    Enum for filtering notes by different criteria
-    """
-    ALL = "all"                    # Tüm notlar
-    FAVORITES = "favorites"        # Sadece favoriler
+    """Note filtering options"""
+    ALL = "all"
+    FAVORITES = "favorites"
 
 
 class NoteSort(str, Enum):
-    """
-    Enum for sorting notes
-    """
-    NEWEST = "newest"              # En yeniler (updated_at desc)
-    OLDEST = "oldest"              # En eskiler (updated_at asc)
+    """Note sorting options"""
+    NEWEST = "newest"
+    OLDEST = "oldest"
 
 router = APIRouter(prefix="/notes", tags=["notes"])
 
 
 @router.get("/", response_model=NoteListResponse)
 async def get_notes(
-    search: Optional[str] = Query(None, description="Search term for notes"),
-    search_in: SearchIn = Query(SearchIn.BOTH, description="Where to search: title, content, or both"),
-    filter_by: NoteFilter = Query(NoteFilter.ALL, description="Filter notes: all or favorites"),
-    sort_by: NoteSort = Query(NoteSort.NEWEST, description="Sort notes: newest or oldest"),
+    search: Optional[str] = Query(None, description="Search term"),
+    search_in: SearchIn = Query(SearchIn.BOTH, description="Search scope"),
+    filter_by: NoteFilter = Query(NoteFilter.ALL, description="Filter type"),
+    sort_by: NoteSort = Query(NoteSort.NEWEST, description="Sort order"),
     page: int = Query(1, ge=1, description="Page number"),
     per_page: int = Query(10, ge=1, le=100, description="Items per page"),
     db: AsyncSession = Depends(get_db),
     current_user: UUID = Depends(get_current_user)
 ):
     """
-    Get all notes for the authenticated user with optional search, filtering and pagination
-    
-    - **search**: Optional search term to filter notes (case-insensitive)
-    - **search_in**: Where to search - 'both' (title and content), 'title' only, or 'content' only
-    - **filter_by**: Filter notes by category - 'all' or 'favorites'
-    - **sort_by**: Sort notes - 'newest' (updated_at desc) or 'oldest' (updated_at asc)
-    - **page**: Page number for pagination (starts from 1)
-    - **per_page**: Number of items per page (max 100)
+    Get notes with search, filtering and pagination
     """
     skip = (page - 1) * per_page
     
@@ -86,10 +73,7 @@ async def create_note(
     current_user: UUID = Depends(get_current_user)
 ):
     """
-    Create a new note for the authenticated user
-    
-    - **title**: Note title (required, max 255 characters)
-    - **content**: Note content (required)
+    Create a new note
     """
     note = await NoteService.create_note(
         db=db,
@@ -107,9 +91,7 @@ async def get_note(
     current_user: UUID = Depends(get_current_user)
 ):
     """
-    Get a specific note by ID
-    
-    Only returns the note if it belongs to the authenticated user
+    Get note by ID
     """
     note = await NoteService.get_note_by_id(
         db=db,
@@ -134,10 +116,7 @@ async def update_note(
     current_user: UUID = Depends(get_current_user)
 ):
     """
-    Update a specific note by ID
-    
-    Only allows updating if the note belongs to the authenticated user.
-    You can update either title, content, or both.
+    Update note by ID
     """
     note = await NoteService.update_note(
         db=db,
@@ -162,9 +141,7 @@ async def delete_note(
     current_user: UUID = Depends(get_current_user)
 ):
     """
-    Delete a specific note by ID
-    
-    Only allows deletion if the note belongs to the authenticated user
+    Delete note by ID
     """
     deleted = await NoteService.delete_note(
         db=db,

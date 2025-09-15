@@ -9,19 +9,18 @@ logger = logging.getLogger(__name__)
 # Create the declarative base
 Base = declarative_base()
 
-# Create async engine with Supabase PostgreSQL
-# Using connection pooling URL for better performance on Vercel
+# Async engine with Supabase PostgreSQL
 # Convert postgresql:// to postgresql+asyncpg:// for asyncpg driver
 database_url = settings.database_url.replace("postgresql://", "postgresql+asyncpg://")
 engine = create_async_engine(
     database_url,
-    echo=settings.debug,  # Log SQL queries in debug mode
+    echo=settings.debug,
     poolclass=NullPool,   # No connection pooling (Vercel-safe)
     connect_args={
         "server_settings": {
-            "jit": "off",  # Disable JIT for faster connection
+            "jit": "off",
         },
-        "command_timeout": 30,  # Query timeout
+        "command_timeout": 30,
     }
 )
 
@@ -35,16 +34,12 @@ AsyncSessionLocal = async_sessionmaker(
 
 async def get_db() -> AsyncSession:
     """
-    Dependency to get database session
-    
-    Yields:
-        AsyncSession: Database session
+    Database session dependency
     """
     async with AsyncSessionLocal() as session:
         try:
             yield session
-        except Exception as e:
-            logger.error(f"Database session error: {e}")
+        except Exception:
             await session.rollback()
             raise
         finally:
@@ -53,17 +48,11 @@ async def get_db() -> AsyncSession:
 
 async def init_db():
     """
-    Initialize database - For Supabase, tables already exist
-    
-    Note: Tables are managed via Supabase Dashboard
-    This function is kept for compatibility but doesn't create tables
+    Initialize database (Supabase tables already exist)
     """
     try:
-        logger.info("Using existing Supabase tables - no initialization needed")
-        # Tables already exist in Supabase, no need to create them
         pass
-    except Exception as e:
-        logger.error(f"Database initialization error: {e}")
+    except Exception:
         raise
 
 
@@ -73,7 +62,5 @@ async def close_db():
     """
     try:
         await engine.dispose()
-        logger.info("Database connections closed successfully")
-    except Exception as e:
-        logger.error(f"Error closing database connections: {e}")
+    except Exception:
         raise
