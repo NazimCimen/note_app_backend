@@ -119,6 +119,8 @@ CREATE TABLE note (
     content TEXT NOT NULL,
     is_favorite BOOLEAN DEFAULT FALSE,
     user_id UUID NOT NULL,
+    summary TEXT,
+    keywords TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

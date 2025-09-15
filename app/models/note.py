@@ -19,6 +19,8 @@ class Note(Base):
     content = Column(Text, nullable=False)
     is_favorite = Column(Boolean, default=False, nullable=False)
     user_id = Column(UUID(as_uuid=True), nullable=False, index=True)
+    summary = Column(Text, nullable=True)
+    keywords = Column(Text, nullable=True)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     

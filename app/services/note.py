@@ -22,7 +22,9 @@ class NoteService:
             title=note_data.title,
             content=note_data.content,
             is_favorite=note_data.is_favorite,
-            user_id=user_id
+            user_id=user_id,
+            summary=note_data.summary,
+            keywords=note_data.keywords
         )
         
         db.add(db_note)

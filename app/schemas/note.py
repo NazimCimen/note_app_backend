@@ -11,6 +11,8 @@ class NoteBase(BaseModel):
     title: str = Field(..., min_length=1, max_length=255, description="Note title")
     content: str = Field(..., min_length=1, description="Note content")
     is_favorite: bool = Field(default=False, description="Whether the note is marked as favorite")
+    summary: Optional[str] = Field(None, description="Note summary")
+    keywords: Optional[str] = Field(None, description="Note keywords")
 
 
 class NoteCreate(NoteBase):
@@ -27,6 +29,8 @@ class NoteUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=255, description="Note title")
     content: Optional[str] = Field(None, min_length=1, description="Note content")
     is_favorite: Optional[bool] = Field(None, description="Whether the note is marked as favorite")
+    summary: Optional[str] = Field(None, description="Note summary")
+    keywords: Optional[str] = Field(None, description="Note keywords")
 
 
 class NoteResponse(NoteBase):
